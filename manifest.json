@@ -4,7 +4,8 @@
     "version": "1.0.1",
     "permissions": [
         "downloads",
-        "scripting"
+        "scripting",
+        "storage"
     ],
     "host_permissions": [
         "https://geargenerator.com/*"
@@ -19,6 +20,7 @@
             "128": "images/gear-128.png"
         }
     },
+    "options_page": "options.html",
     "content_scripts": [
         {
             "matches": [

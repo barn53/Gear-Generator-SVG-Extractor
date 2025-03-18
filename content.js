@@ -1,30 +1,50 @@
+const dpi = 72
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "extractSVG") {
-        let svgScale = document.querySelector("#scale")
-        let scale = parseFloat(svgScale.value) // mm / px
-        // norm to new pixel size
-        // scale = 96 / 25.4 / scale
-        scale = 72 / 25.4 / scale
+        // Retrieve stored options
 
-        const gears = document.querySelectorAll('#screen .svggear')
-        let svgGears = []
-        for (let gear of gears) {
+        chrome.storage.sync.get(['addText', 'addGuides', 'addCenterHole', 'centerHole'], (options) => {
+            let svgScale = document.querySelector("#scale")
+            let scale = parseFloat(svgScale.value) // mm / px
+            // norm to new pixel size
+            // scale = 96 / 25.4 / scale
+            scale = dpi / 25.4 / scale
 
-            if (gear.querySelector('path').classList.contains('chainpoly')) {
-                continue
+            const gears = document.querySelectorAll('#screen .svggear')
+            let svgGears = []
+            for (let gear of gears) {
+
+                if (gear.querySelector('path').classList.contains('chainpoly')) {
+                    continue
+                }
+
+                let svgGear = new XMLSerializer().serializeToString(gear)
+                if (svgScale) {
+                    svgGear = resizeSVGWithFactor(svgGear, scale)
+                }
+
+                if (!options.addText) {
+                    svgGear = removeText(svgGear)
+                }
+
+                if (!options.addGuides) {
+                    svgGear = removeGuides(svgGear)
+                }
+
+                if (options.addCenterHole && options.centerHole && parseFloat(options.centerHole) > 0) {
+                    svgGear = addCenterHole(svgGear, parseFloat(options.centerHole))
+                }
+
+                svgGear = cleanUp(svgGear)
+
+                svgGears.push(svgGear)
             }
 
-            let svgGear = new XMLSerializer().serializeToString(gear)
-            if (svgScale) {
-                svgGear = resizeSVGWithFactor(svgGear, scale)
-            }
-            svgGears.push(svgGear)
-        }
-
-        chrome.runtime.sendMessage({
-            svgGears: svgGears
-        })
+            chrome.runtime.sendMessage({
+                svgGears: svgGears
+            })
+        });
     }
 })
 
@@ -131,4 +151,55 @@ function scalePolyline(polyline, scale) {
     points = newPoints.join(" ")
     polyline.setAttribute("points", points)
 }
+
+function addCenterHole(svgGear, holeMM) {
+    let parser = new DOMParser()
+    let svgDoc = parser.parseFromString(svgGear, "image/svg+xml")
+
+    let guides = svgDoc.querySelector(".guides")
+    while (guides.firstChild) {
+        guides.removeChild(guides.firstChild)
+    }
+
+    let circle = svgDoc.createElement("circle")
+    circle.setAttribute("fill", "none")
+    circle.setAttribute("stroke", "#05d")
+    circle.setAttribute("stroke-width", "0.1")
+    circle.setAttribute("stroke-miterlimit", "10")
+    circle.setAttribute("cx", "0")
+    circle.setAttribute("cy", "0")
+    circle.setAttribute("r", `${(((holeMM / 2) * dpi) / 25.4)}`)
+    guides.appendChild(circle)
+
+    return new XMLSerializer().serializeToString(svgDoc)
+}
+
+function removeText(svgGear) {
+    let parser = new DOMParser()
+    let svgDoc = parser.parseFromString(svgGear, "image/svg+xml")
+    let geartext = svgDoc.querySelector(".geartext")
+    if (geartext) {
+        geartext.remove()
+    }
+    return new XMLSerializer().serializeToString(svgDoc)
+}
+
+function removeGuides(svgGear) {
+    let parser = new DOMParser()
+    let svgDoc = parser.parseFromString(svgGear, "image/svg+xml")
+    let gearguides = svgDoc.querySelector(".gearguides")
+    if (gearguides) {
+        gearguides.remove()
+    }
+    let firstmarker = svgDoc.querySelector(".firstmarker")
+    if (firstmarker) {
+        firstmarker.remove()
+    }
+    return new XMLSerializer().serializeToString(svgDoc)
+}
+
+function cleanUp(svgGear) {
+    return svgGear.replace(/xmlns=""/g, "")
+}
+
 
