@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Gear Generator SVG Extractor",
-    "version": "1.0",
+    "version": "1.0.1",
     "permissions": [
         "downloads",
         "scripting"
@@ -12,5 +12,21 @@
     "background": {
         "service_worker": "background.js"
     },
-    "action": {}
+    "action": {
+        "default_icon": {
+            "16": "images/gear-128.png",
+            "48": "images/gear-128.png",
+            "128": "images/gear-128.png"
+        }
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://geargenerator.com/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
 }

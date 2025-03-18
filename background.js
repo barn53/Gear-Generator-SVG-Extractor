@@ -1,26 +1,19 @@
-chrome.action.onClicked.addListener(async (tab) => {
-    chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-            let svgElement = document.querySelector("svg");
-            if (svgElement) {
-                let svgString = new XMLSerializer().serializeToString(svgElement);
-                chrome.runtime.sendMessage({ svgData: svgString });
-            } else {
-                alert("No SVG found on this page!");
-            }
-        }
-    });
-});
+chrome.action.onClicked.addListener((tab) => {
+    chrome.tabs.sendMessage(tab.id, { action: "extractSVG" })
+})
 
 chrome.runtime.onMessage.addListener((message) => {
-    if (message.svgData) {
-        let encodedSvg = encodeURIComponent(message.svgData);
-        let dataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
-
-        chrome.downloads.download({
-            url: dataUrl,
-            filename: "extracted.svg"
-        });
+    if (message.svgGears) {
+        let date = new Date()
+        for (let idx = 0; idx < message.svgGears.length; idx++) {
+            let svgGear = message.svgGears[idx]
+            let svgEncodedData = encodeURIComponent(svgGear)
+            let dataUrl = `data:image/svg+xml;charset=utf-8,${svgEncodedData}`
+            let filename = `${date.toLocaleString().replace(/[: .]/g, "_")}_gear_${idx}.svg`
+            chrome.downloads.download({
+                url: dataUrl,
+                filename
+            })
+        }
     }
-});
+})
