@@ -1,14 +1,14 @@
-const dpi = 72
+let dpi = 72
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "extractSVG") {
         // Retrieve stored options
 
-        chrome.storage.sync.get(['addText', 'addGuides', 'addCenterHole', 'centerHole'], (options) => {
+        chrome.storage.sync.get(['addText', 'addGuides', 'dpi', 'addCenterHole', 'centerHole'], (options) => {
             let svgScale = document.querySelector("#scale")
             let scale = parseFloat(svgScale.value) // mm / px
             // norm to new pixel size
-            // scale = 96 / 25.4 / scale
+            dpi = parseInt(options.dpi)
             scale = dpi / 25.4 / scale
 
             const gears = document.querySelectorAll('#screen .svggear')
